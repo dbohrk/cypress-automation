@@ -1,5 +1,6 @@
 /// <reference types="Cypress" /> 
 /// <reference types="cypress-iframe" />
+
 import 'cypress-iframe'
 // Import the ame used for export from the file pageObjects
 import HomePage from '../pageObjects/HomePage'
@@ -20,8 +21,12 @@ describe('My First Test Site', function()
        // Create object for class (HomePage)
         const homePage=new HomePage()
         const productPage=new ProductPage()
+        // Set in cypress.json as env setting
 
-        cy.visit("https://rahulshettyacademy.com/angularpractice/")
+cy.log(Cypress.env('url'))
+cy.log(Cypress.env('hello'))   
+cy.log(Cypress.env())
+        cy.visit(Cypress.env('url'))
         homePage.getEditBox().type(this.data.name)
         homePage.getGender().select(this.data.gender)
         homePage.getTwoWayDataBinding().should('have.value',this.data.name)
@@ -46,10 +51,47 @@ describe('My First Test Site', function()
         });
         // cy.get('#navbarResponsive > .navbar-nav > .nav-item > .nav-link').click()
         homePage.checkOutButton().click()
+        // Check checkout totals
+        var sum=0
+        cy.get('tr td:nth-child(4) > strong').each(($el, index, $list) => {
+            const actualText=$el.text()
+            var res=actualText.split(' ')
+            res=res[1].trim()
+            cy.log(res)
+            sum=Number(sum+Number(res));
+        }).then(function(){
+            // Wait until .each is complete
+            cy.log(sum)
+        })
+        cy.get('h3 > strong').then(function(element){
+            const amount=element.text()
+            var res=amount.split(' ')
+            res=Number(res[1].trim())
+            cy.log(res)
+            expect(sum).to.equal(res)
+        })
+
         productPage.checkOutButton().click()
+
         // Enter delivery Country
-        // Check Agree with Terms and Conditions
+        // Change timeout from default for this block only
+        // Cypress.config('defaultCommandTimeout', 10000)
+        cy.get('#country').type('United States')
+        cy.wait(4000)
+        cy.get('.suggestions > ul > li > a').click()
+        // Click "Agree with Terms and Conditions"
+        // Since checkbox is covered with dropdown, use {force:true}
+        cy.get('.checkbox > label').click({force:true})
         // Click Purchase button
+        cy.get('.ng-untouched > .btn').click()
+        // Verify success message
+        // cy.get('.alert').should('have.text','Success! Thank you! Your order')
+        cy.get('.alert').then(function(element)
+            {
+                const actualText=element.text()
+                // Assertion if alert text contains 'Success'
+                expect(actualText.includes('Success')).to.be.true
+            })
     })
 })
 
